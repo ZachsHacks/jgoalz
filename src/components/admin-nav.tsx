@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   UserRound,
-  Gamepad2,
+  CircleDot,
   CalendarDays,
   DollarSign,
   Truck,
@@ -16,7 +16,7 @@ import {
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/players", label: "Players", icon: UserRound },
-  { href: "/admin/games", label: "Games", icon: Gamepad2 },
+  { href: "/admin/games", label: "Games", icon: CircleDot },
   { href: "/admin/sessions", label: "Sessions", icon: CalendarDays },
   { href: "/admin/payments", label: "Payments", icon: DollarSign },
   { href: "/admin/finances", label: "Finances", icon: PieChart },
