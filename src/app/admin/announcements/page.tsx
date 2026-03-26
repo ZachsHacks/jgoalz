@@ -251,7 +251,7 @@ export default function AnnouncementsPage() {
             </div>
             <div>
               <Label htmlFor="ann-segment">Segment</Label>
-              <Select value={segment} onValueChange={(v) => setSegment(v)}>
+              <Select value={segment} onValueChange={(v) => v !== null && setSegment(v)}>
                 <SelectTrigger id="ann-segment">
                   <SelectValue />
                 </SelectTrigger>
