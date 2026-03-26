@@ -11,6 +11,7 @@ import {
   DollarSign,
   Truck,
   PieChart,
+  Megaphone,
 } from "lucide-react";
 
 const navItems = [
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/admin/sessions", label: "Sessions", icon: CalendarDays },
   { href: "/admin/payments", label: "Payments", icon: DollarSign },
   { href: "/admin/finances", label: "Finances", icon: PieChart },
+  { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
   { href: "/admin/drivers", label: "Drivers", icon: Truck },
 ];
 
