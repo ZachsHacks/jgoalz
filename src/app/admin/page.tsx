@@ -15,6 +15,9 @@ import {
   ArrowRight,
   MapPin,
   Clock,
+  ExternalLink,
+  Copy,
+  Check,
 } from "lucide-react";
 import type { SessionWithGame } from "@/types/database";
 import { SEGMENT_COLORS, DAY_NAMES } from "@/types/database";
@@ -28,6 +31,19 @@ export default function DashboardPage() {
   });
   const [upcomingSessions, setUpcomingSessions] = useState<SessionWithGame[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+
+  function getBaseUrl() {
+    if (typeof window !== "undefined") return window.location.origin;
+    return "";
+  }
+
+  async function copyLink(path: string) {
+    const url = `${getBaseUrl()}${path}`;
+    await navigator.clipboard.writeText(url);
+    setCopiedLink(path);
+    setTimeout(() => setCopiedLink(null), 2000);
+  }
 
   useEffect(() => {
     async function loadDashboard() {
@@ -142,6 +158,67 @@ export default function DashboardPage() {
                 </Card>
               );
             })}
+      </div>
+
+      {/* Quick Links */}
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold">Player Links</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Card className="shadow-sm">
+            <CardContent className="pt-5 pb-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Player Portal</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Announcements, reviews, schedule</p>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => copyLink("/portal")} title="Copy link">
+                    {copiedLink === "/portal" ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                  <Link href="/portal" target="_blank" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm">
+            <CardContent className="pt-5 pb-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Registration Form</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">New player signup + waiver</p>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => copyLink("/join")} title="Copy link">
+                    {copiedLink === "/join" ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                  <Link href="/join" target="_blank" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm">
+            <CardContent className="pt-5 pb-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Weekly Calendar</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Check-in + claim spots</p>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => copyLink("/calendar")} title="Copy link">
+                    {copiedLink === "/calendar" ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                  <Link href="/calendar" target="_blank" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Upcoming sessions */}
