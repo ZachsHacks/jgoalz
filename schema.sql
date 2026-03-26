@@ -157,3 +157,5 @@ create policy "Full access" on drivers for all using (true) with check (true);
 create policy "Full access" on driver_assignments for all using (true) with check (true);
 create policy "Full access" on expenses for all using (true) with check (true);
 create policy "Full access" on sms_log for all using (true) with check (true);
+
+-- Phase 2 migration: see schema-v2.sql

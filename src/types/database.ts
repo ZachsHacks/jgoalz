@@ -5,6 +5,7 @@ export type PaymentStatus = "pending" | "paid" | "reminded";
 export type PlayerSource = "permanent" | "drop_in";
 export type SessionPlayerStatus = "confirmed" | "cancelled_early" | "cancelled_late" | "no_show";
 export type GamePlayerStatus = "active" | "paused" | "dropped";
+export type Commitment = "permanent" | "sub";
 
 export type Player = {
   id: string;
@@ -15,6 +16,15 @@ export type Player = {
   segment: Segment;
   emergency_contact: string | null;
   notes: string | null;
+  commitment: Commitment;
+  play_day: number | null;
+  play_time: string | null;
+  location_preference: string | null;
+  phone2: string | null;
+  active: boolean;
+  school: string | null;
+  age: number | null;
+  waiver_accepted_at: string | null;
   created_at: string;
 };
 
@@ -58,6 +68,7 @@ export type SessionPlayer = {
   status: SessionPlayerStatus;
   needs_transport: boolean;
   cancel_token: string;
+  policy_accepted: boolean;
   cancelled_at: string | null;
   created_at: string;
 };
@@ -120,6 +131,34 @@ export type SessionPlayerWithPlayer = SessionPlayer & { player: Player };
 export type SessionWithGame = Session & { game: Game };
 export type PaymentWithDetails = Payment & { player: Player; session: SessionWithGame };
 
+export type Location = {
+  id: string;
+  name: string;
+  address: string | null;
+  active: boolean;
+  created_at: string;
+};
+
+export type Announcement = {
+  id: string;
+  title: string;
+  body: string;
+  segment: Segment | null;
+  sent_via_sms: boolean;
+  created_at: string;
+};
+
+export type Review = {
+  id: string;
+  player_id: string | null;
+  body: string;
+  rating: number | null;
+  approved: boolean;
+  created_at: string;
+};
+
+export type ReviewWithPlayer = Review & { player: Player | null };
+
 // Day of week helper
 export const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 
@@ -134,4 +173,9 @@ export const SEGMENT_COLORS: Record<Segment, { bg: string; text: string; badge: 
   women: { bg: "bg-purple-50", text: "text-purple-700", badge: "bg-purple-100 text-purple-800" },
   teens: { bg: "bg-pink-50", text: "text-pink-700", badge: "bg-pink-100 text-pink-800" },
   girls: { bg: "bg-teal-50", text: "text-teal-700", badge: "bg-teal-100 text-teal-800" },
+};
+
+export const COMMITMENT_LABELS: Record<Commitment, string> = {
+  permanent: "Permanent",
+  sub: "Sub / Fill-in",
 };
