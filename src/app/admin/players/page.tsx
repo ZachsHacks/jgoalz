@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Card,
   CardContent,
@@ -37,19 +38,31 @@ import {
   Trash2,
   AlertTriangle,
   StickyNote,
+  Calendar,
 } from "lucide-react";
-import type { Player, Segment } from "@/types/database";
-import { SEGMENT_LABELS, SEGMENT_COLORS } from "@/types/database";
+import type { Player, Segment, Commitment, Location } from "@/types/database";
+import {
+  SEGMENT_LABELS,
+  SEGMENT_COLORS,
+  COMMITMENT_LABELS,
+  DAY_NAMES,
+} from "@/types/database";
 
 export default function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [segmentFilter, setSegmentFilter] = useState<Segment | "all">("all");
+  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "inactive">("all");
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [addSegment, setAddSegment] = useState<Segment>("women");
   const [editSegment, setEditSegment] = useState<Segment>("women");
+  const [addCommitment, setAddCommitment] = useState<Commitment>("sub");
+  const [editCommitment, setEditCommitment] = useState<Commitment>("sub");
+  const [addActive, setAddActive] = useState(true);
+  const [editActive, setEditActive] = useState(true);
+  const [locations, setLocations] = useState<Location[]>([]);
 
   async function loadPlayers() {
     const { data } = await supabase
@@ -60,8 +73,18 @@ export default function PlayersPage() {
     setLoading(false);
   }
 
+  async function loadLocations() {
+    const { data } = await supabase
+      .from("locations")
+      .select("*")
+      .eq("active", true)
+      .order("name");
+    setLocations((data as Location[]) ?? []);
+  }
+
   useEffect(() => {
     loadPlayers();
+    loadLocations();
   }, []);
 
   const filtered = players.filter((p) => {
@@ -70,7 +93,11 @@ export default function PlayersPage() {
       (p.phone?.includes(search) ?? false);
     const matchesSegment =
       segmentFilter === "all" || p.segment === segmentFilter;
-    return matchesSearch && matchesSegment;
+    const matchesActive =
+      activeFilter === "all" ||
+      (activeFilter === "active" && p.active) ||
+      (activeFilter === "inactive" && !p.active);
+    return matchesSearch && matchesSegment && matchesActive;
   });
 
   async function handleAddPlayer(e: React.FormEvent<HTMLFormElement>) {
@@ -84,9 +111,19 @@ export default function PlayersPage() {
       segment: addSegment,
       emergency_contact: (form.get("emergency_contact") as string) || null,
       notes: (form.get("notes") as string) || null,
+      commitment: addCommitment,
+      play_day: addCommitment === "permanent" ? parseInt(form.get("play_day") as string) || null : null,
+      play_time: addCommitment === "permanent" ? (form.get("play_time") as string) || null : null,
+      location_preference: (form.get("location_preference") as string) || null,
+      phone2: (form.get("phone2") as string) || null,
+      active: addActive,
+      school: addSegment === "girls" ? (form.get("school") as string) || null : null,
+      age: addSegment === "girls" ? parseInt(form.get("age") as string) || null : null,
     });
     setShowAddPlayer(false);
     setAddSegment("women");
+    setAddCommitment("sub");
+    setAddActive(true);
     loadPlayers();
   }
 
@@ -104,6 +141,14 @@ export default function PlayersPage() {
         segment: editSegment,
         emergency_contact: (form.get("emergency_contact") as string) || null,
         notes: (form.get("notes") as string) || null,
+        commitment: editCommitment,
+        play_day: editCommitment === "permanent" ? parseInt(form.get("play_day") as string) || null : null,
+        play_time: editCommitment === "permanent" ? (form.get("play_time") as string) || null : null,
+        location_preference: (form.get("location_preference") as string) || null,
+        phone2: (form.get("phone2") as string) || null,
+        active: editActive,
+        school: editSegment === "girls" ? (form.get("school") as string) || null : null,
+        age: editSegment === "girls" ? parseInt(form.get("age") as string) || null : null,
       })
       .eq("id", editingPlayer.id);
     setEditingPlayer(null);
@@ -145,12 +190,20 @@ export default function PlayersPage() {
     defaultValues,
     segment,
     setSegment,
+    commitment,
+    setCommitment,
+    active,
+    setActive,
     submitLabel,
   }: {
     onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
     defaultValues?: Player;
     segment: Segment;
     setSegment: (s: Segment) => void;
+    commitment: Commitment;
+    setCommitment: (c: Commitment) => void;
+    active: boolean;
+    setActive: (a: boolean) => void;
     submitLabel: string;
   }) {
     return (
@@ -181,11 +234,84 @@ export default function PlayersPage() {
           </Select>
         </div>
         <div>
+          <Label htmlFor="commitment">Commitment</Label>
+          <Select
+            value={commitment}
+            onValueChange={(v) => setCommitment(v as Commitment)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="permanent">{COMMITMENT_LABELS.permanent}</SelectItem>
+              <SelectItem value="sub">{COMMITMENT_LABELS.sub}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {commitment === "permanent" && (
+          <>
+            <div>
+              <Label htmlFor="play_day">Play Day</Label>
+              <Select
+                name="play_day"
+                defaultValue={defaultValues?.play_day != null ? String(defaultValues.play_day) : undefined}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select day" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DAY_NAMES.map((day, i) => (
+                    <SelectItem key={day} value={String(i)}>
+                      {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="play_time">Play Time</Label>
+              <Input
+                id="play_time"
+                name="play_time"
+                placeholder="e.g. 7:00 PM"
+                defaultValue={defaultValues?.play_time ?? ""}
+              />
+            </div>
+          </>
+        )}
+        <div>
+          <Label htmlFor="location_preference">Location Preference</Label>
+          <Select
+            name="location_preference"
+            defaultValue={defaultValues?.location_preference ?? undefined}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="No preference" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">No preference</SelectItem>
+              {locations.map((loc) => (
+                <SelectItem key={loc.id} value={loc.name}>
+                  {loc.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
           <Label htmlFor="phone">Phone</Label>
           <Input
             id="phone"
             name="phone"
             defaultValue={defaultValues?.phone ?? ""}
+          />
+        </div>
+        <div>
+          <Label htmlFor="phone2">Second Phone</Label>
+          <Input
+            id="phone2"
+            name="phone2"
+            defaultValue={defaultValues?.phone2 ?? ""}
           />
         </div>
         <div>
@@ -205,6 +331,29 @@ export default function PlayersPage() {
             defaultValue={defaultValues?.address ?? ""}
           />
         </div>
+        {segment === "girls" && (
+          <>
+            <div>
+              <Label htmlFor="school">School</Label>
+              <Input
+                id="school"
+                name="school"
+                defaultValue={defaultValues?.school ?? ""}
+              />
+            </div>
+            <div>
+              <Label htmlFor="age">Age</Label>
+              <Input
+                id="age"
+                name="age"
+                type="number"
+                min={1}
+                max={18}
+                defaultValue={defaultValues?.age ?? ""}
+              />
+            </div>
+          </>
+        )}
         <div>
           <Label htmlFor="emergency_contact">Emergency Contact</Label>
           <Input
@@ -221,6 +370,16 @@ export default function PlayersPage() {
             rows={3}
             defaultValue={defaultValues?.notes ?? ""}
           />
+        </div>
+        <div className="flex items-center gap-3">
+          <Switch
+            id="active"
+            checked={active}
+            onCheckedChange={setActive}
+          />
+          <Label htmlFor="active" className="cursor-pointer">
+            {active ? "Active" : "Inactive"}
+          </Label>
         </div>
         <Button type="submit" className="w-full">
           {submitLabel}
@@ -241,7 +400,11 @@ export default function PlayersPage() {
         </div>
         <Dialog open={showAddPlayer} onOpenChange={(open) => {
           setShowAddPlayer(open);
-          if (!open) setAddSegment("women");
+          if (!open) {
+            setAddSegment("women");
+            setAddCommitment("sub");
+            setAddActive(true);
+          }
         }}>
           <DialogTrigger className={cn(buttonVariants({ variant: "default", size: "default" }))}>
               <Plus className="w-4 h-4 mr-2" />
@@ -255,6 +418,10 @@ export default function PlayersPage() {
               onSubmit={handleAddPlayer}
               segment={addSegment}
               setSegment={setAddSegment}
+              commitment={addCommitment}
+              setCommitment={setAddCommitment}
+              active={addActive}
+              setActive={setAddActive}
               submitLabel="Save"
             />
           </DialogContent>
@@ -262,7 +429,7 @@ export default function PlayersPage() {
       </div>
 
       {/* Search & Filter */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -284,6 +451,19 @@ export default function PlayersPage() {
             <SelectItem value="women">{SEGMENT_LABELS.women}</SelectItem>
             <SelectItem value="teens">{SEGMENT_LABELS.teens}</SelectItem>
             <SelectItem value="girls">{SEGMENT_LABELS.girls}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={activeFilter}
+          onValueChange={(v) => setActiveFilter(v as "all" | "active" | "inactive")}
+        >
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active Only</SelectItem>
+            <SelectItem value="inactive">Inactive Only</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -318,7 +498,10 @@ export default function PlayersPage() {
           filtered.map((player) => (
             <Card
               key={player.id}
-              className="shadow-sm hover:shadow-md transition-shadow"
+              className={cn(
+                "shadow-sm hover:shadow-md transition-shadow",
+                !player.active && "opacity-60"
+              )}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -326,7 +509,7 @@ export default function PlayersPage() {
                     <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm">
                       {player.name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <CardTitle className="text-lg">{player.name}</CardTitle>
                       <Badge
                         variant="secondary"
@@ -334,6 +517,32 @@ export default function PlayersPage() {
                       >
                         {SEGMENT_LABELS[player.segment]}
                       </Badge>
+                      <Badge
+                        variant="secondary"
+                        className={
+                          player.commitment === "permanent"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-gray-100 text-gray-700"
+                        }
+                      >
+                        {COMMITMENT_LABELS[player.commitment]}
+                      </Badge>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full",
+                          player.active
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            player.active ? "bg-green-500" : "bg-red-500"
+                          )}
+                        />
+                        {player.active ? "Active" : "Inactive"}
+                      </span>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -343,6 +552,8 @@ export default function PlayersPage() {
                         if (open) {
                           setEditingPlayer(player);
                           setEditSegment(player.segment);
+                          setEditCommitment(player.commitment);
+                          setEditActive(player.active);
                         } else {
                           setEditingPlayer(null);
                         }
@@ -360,6 +571,10 @@ export default function PlayersPage() {
                           defaultValues={player}
                           segment={editSegment}
                           setSegment={setEditSegment}
+                          commitment={editCommitment}
+                          setCommitment={setEditCommitment}
+                          active={editActive}
+                          setActive={setEditActive}
                           submitLabel="Update"
                         />
                       </DialogContent>
@@ -382,6 +597,12 @@ export default function PlayersPage() {
                       <span>{player.phone}</span>
                     </div>
                   )}
+                  {player.phone2 && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>{player.phone2}</span>
+                    </div>
+                  )}
                   {player.email && (
                     <div className="flex items-center gap-1.5">
                       <Mail className="w-3.5 h-3.5" />
@@ -392,6 +613,32 @@ export default function PlayersPage() {
                     <div className="flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5" />
                       <span>{player.address}</span>
+                    </div>
+                  )}
+                  {player.location_preference && (
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>Prefers: {player.location_preference}</span>
+                    </div>
+                  )}
+                  {player.commitment === "permanent" && (player.play_day != null || player.play_time) && (
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>
+                        {player.play_day != null ? DAY_NAMES[player.play_day] : ""}
+                        {player.play_day != null && player.play_time ? " " : ""}
+                        {player.play_time ?? ""}
+                      </span>
+                    </div>
+                  )}
+                  {player.segment === "girls" && player.school && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs">School: {player.school}</span>
+                    </div>
+                  )}
+                  {player.segment === "girls" && player.age != null && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs">Age: {player.age}</span>
                     </div>
                   )}
                   {player.emergency_contact && (
@@ -416,7 +663,7 @@ export default function PlayersPage() {
             <CardContent className="py-12 text-center">
               <Search className="w-12 h-12 mx-auto text-muted-foreground/40 mb-4" />
               <p className="text-muted-foreground">
-                {search || segmentFilter !== "all"
+                {search || segmentFilter !== "all" || activeFilter !== "all"
                   ? "No players match your search."
                   : "No players yet. Add one to get started."}
               </p>
