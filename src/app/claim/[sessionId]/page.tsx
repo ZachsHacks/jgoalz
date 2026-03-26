@@ -4,6 +4,7 @@ import { use, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import type { Game, Player, Session } from "@/types/database";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type ClaimData = {
   session: Session;
@@ -30,6 +31,7 @@ export default function ClaimPage({
   const phone = searchParams.get("phone");
 
   const [state, setState] = useState<ClaimState>({ status: "loading" });
+  const [policyAccepted, setPolicyAccepted] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!phone) {
@@ -141,6 +143,7 @@ export default function ClaimPage({
       status: "confirmed",
       needs_transport: false,
       cancel_token: crypto.randomUUID(),
+      policy_accepted: true,
     });
 
     if (spErr) {
@@ -291,9 +294,23 @@ export default function ClaimPage({
               </p>
             </div>
 
+            <div className="flex items-start gap-3 mb-6">
+              <Checkbox
+                id="policy"
+                checked={policyAccepted}
+                onCheckedChange={(v) => setPolicyAccepted(v === true)}
+                className="mt-0.5"
+              />
+              <label htmlFor="policy" className="text-sm text-gray-700 leading-tight cursor-pointer">
+                I understand the cancellation policy: cancellations within 24 hours of
+                game time forfeit the session credit.
+              </label>
+            </div>
+
             <button
               onClick={handleClaim}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+              disabled={!policyAccepted}
+              className={`w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors ${!policyAccepted ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Claim This Spot
             </button>
