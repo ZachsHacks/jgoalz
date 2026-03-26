@@ -34,9 +34,15 @@ const SPORT_COLORS: Record<Sport, { bg: string; text: string }> = {
 
 type SessionWithGame = Session & { game: Game };
 
-type CalendarSession = SessionWithGame & {
-  isRegistered: boolean;
-  joiningSessionId: string | null;
+type RosterPlayer = {
+  name: string;
+  status: string;
+  source: string;
+};
+
+type SessionRoster = {
+  confirmed: RosterPlayer[];
+  cancelled: RosterPlayer[];
 };
 
 export default function CalendarPage() {
@@ -55,6 +61,7 @@ export default function CalendarPage() {
   const [claimingSessionId, setClaimingSessionId] = useState<string | null>(null);
   const [joinError, setJoinError] = useState<Record<string, string>>({});
   const [justJoined, setJustJoined] = useState<Set<string>>(new Set());
+  const [rosters, setRosters] = useState<Record<string, SessionRoster>>({});
 
   const getWeekRange = useCallback(() => {
     const now = new Date();
@@ -119,6 +126,36 @@ export default function CalendarPage() {
           }
         }
         setRegisteredSessionIds(registered);
+      }
+
+      // Load rosters for all filtered sessions (player names + status)
+      if (sessionIds.length > 0) {
+        const { data: rosterData } = await supabase
+          .from("session_players")
+          .select("session_id, status, source, player:players(name)")
+          .in("session_id", sessionIds)
+          .in("status", ["confirmed", "cancelled_early", "cancelled_late"]);
+
+        const rosterMap: Record<string, SessionRoster> = {};
+        for (const sid of sessionIds) {
+          rosterMap[sid] = { confirmed: [], cancelled: [] };
+        }
+        if (rosterData) {
+          for (const sp of rosterData as { session_id: string; status: string; source: string; player: { name: string } | { name: string }[] | null }[]) {
+            const playerObj = Array.isArray(sp.player) ? sp.player[0] : sp.player;
+            const entry: RosterPlayer = {
+              name: playerObj?.name ?? "Unknown",
+              status: sp.status,
+              source: sp.source,
+            };
+            if (sp.status === "confirmed") {
+              rosterMap[sp.session_id].confirmed.push(entry);
+            } else {
+              rosterMap[sp.session_id].cancelled.push(entry);
+            }
+          }
+        }
+        setRosters(rosterMap);
       }
 
       setSessions(filtered);
@@ -240,6 +277,17 @@ export default function CalendarPage() {
         s.id === session.id ? { ...s, spots_remaining: freshSession.spots_remaining - 1 } : s
       )
     );
+    // Add player to roster display
+    setRosters((prev) => ({
+      ...prev,
+      [session.id]: {
+        ...prev[session.id],
+        confirmed: [
+          ...(prev[session.id]?.confirmed ?? []),
+          { name: player.name, status: "confirmed", source: "drop_in" },
+        ],
+      },
+    }));
     setJoiningSessionId(null);
     setPolicyAccepted((prev) => ({ ...prev, [session.id]: false }));
     setClaimingSessionId(null);
@@ -399,6 +447,46 @@ export default function CalendarPage() {
                           <p className="text-sm text-gray-500 mb-3">
                             {session.spots_remaining} {session.spots_remaining === 1 ? "spot" : "spots"} left
                           </p>
+                        )}
+
+                        {/* Roster */}
+                        {rosters[session.id] && (rosters[session.id].confirmed.length > 0 || rosters[session.id].cancelled.length > 0) && (
+                          <div className="border-t pt-3 mt-3 mb-3">
+                            {rosters[session.id].confirmed.length > 0 && (
+                              <div className="mb-2">
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                                  Playing ({rosters[session.id].confirmed.length})
+                                </p>
+                                <div className="flex flex-wrap gap-1">
+                                  {rosters[session.id].confirmed.map((rp, i) => (
+                                    <span
+                                      key={i}
+                                      className="inline-flex items-center text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full"
+                                    >
+                                      {rp.name.split(" ")[0]}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {rosters[session.id].cancelled.length > 0 && (
+                              <div>
+                                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">
+                                  Cancelled ({rosters[session.id].cancelled.length})
+                                </p>
+                                <div className="flex flex-wrap gap-1">
+                                  {rosters[session.id].cancelled.map((rp, i) => (
+                                    <span
+                                      key={i}
+                                      className="inline-flex items-center text-xs bg-red-50 text-red-400 px-2 py-0.5 rounded-full line-through"
+                                    >
+                                      {rp.name.split(" ")[0]}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
 
                         {/* Join button / flow */}
