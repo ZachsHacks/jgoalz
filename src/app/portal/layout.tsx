@@ -11,6 +11,7 @@ export default function PortalLayout({
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 py-6 px-4">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-2xl font-bold text-white text-center">Jgoalz</h1>
+          <p className="text-sm text-purple-200 text-center mt-1">Player Portal</p>
         </div>
       </div>
 
