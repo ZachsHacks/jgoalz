@@ -56,7 +56,11 @@ CREATE TABLE IF NOT EXISTS reviews (
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Full access" ON reviews FOR ALL USING (true) WITH CHECK (true);
 
--- 5. Cancellation policy acknowledgments (per session signup)
+-- 5. Experience level for registration
+ALTER TABLE players ADD COLUMN IF NOT EXISTS experience_level text
+  CHECK (experience_level IS NULL OR experience_level IN ('beginner', 'experienced'));
+
+-- 6. Cancellation policy acknowledgments (per session signup)
 ALTER TABLE session_players ADD COLUMN IF NOT EXISTS policy_accepted boolean NOT NULL DEFAULT false;
 
 -- 6. Add sms_log types for new features
