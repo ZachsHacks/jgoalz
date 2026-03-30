@@ -62,6 +62,10 @@ export default function PlayersPage() {
   const [editCommitment, setEditCommitment] = useState<Commitment>("sub");
   const [addActive, setAddActive] = useState(true);
   const [editActive, setEditActive] = useState(true);
+  const [addPlayDay, setAddPlayDay] = useState("");
+  const [editPlayDay, setEditPlayDay] = useState("");
+  const [addLocationPreference, setAddLocationPreference] = useState("");
+  const [editLocationPreference, setEditLocationPreference] = useState("");
   const [locations, setLocations] = useState<Location[]>([]);
 
   async function loadPlayers() {
@@ -112,9 +116,9 @@ export default function PlayersPage() {
       emergency_contact: (form.get("emergency_contact") as string) || null,
       notes: (form.get("notes") as string) || null,
       commitment: addCommitment,
-      play_day: addCommitment === "permanent" ? parseInt(form.get("play_day") as string) || null : null,
+      play_day: addCommitment === "permanent" && addPlayDay ? parseInt(addPlayDay) : null,
       play_time: addCommitment === "permanent" ? (form.get("play_time") as string) || null : null,
-      location_preference: (form.get("location_preference") as string) || null,
+      location_preference: addLocationPreference || null,
       phone2: (form.get("phone2") as string) || null,
       active: addActive,
       school: addSegment === "girls" ? (form.get("school") as string) || null : null,
@@ -124,6 +128,8 @@ export default function PlayersPage() {
     setAddSegment("women");
     setAddCommitment("sub");
     setAddActive(true);
+    setAddPlayDay("");
+    setAddLocationPreference("");
     loadPlayers();
   }
 
@@ -142,9 +148,9 @@ export default function PlayersPage() {
         emergency_contact: (form.get("emergency_contact") as string) || null,
         notes: (form.get("notes") as string) || null,
         commitment: editCommitment,
-        play_day: editCommitment === "permanent" ? parseInt(form.get("play_day") as string) || null : null,
+        play_day: editCommitment === "permanent" && editPlayDay ? parseInt(editPlayDay) : null,
         play_time: editCommitment === "permanent" ? (form.get("play_time") as string) || null : null,
-        location_preference: (form.get("location_preference") as string) || null,
+        location_preference: editLocationPreference || null,
         phone2: (form.get("phone2") as string) || null,
         active: editActive,
         school: editSegment === "girls" ? (form.get("school") as string) || null : null,
@@ -194,6 +200,10 @@ export default function PlayersPage() {
     setCommitment,
     active,
     setActive,
+    playDay,
+    setPlayDay,
+    locationPreference,
+    setLocationPreference,
     submitLabel,
   }: {
     onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -204,6 +214,10 @@ export default function PlayersPage() {
     setCommitment: (c: Commitment) => void;
     active: boolean;
     setActive: (a: boolean) => void;
+    playDay: string;
+    setPlayDay: (v: string) => void;
+    locationPreference: string;
+    setLocationPreference: (v: string) => void;
     submitLabel: string;
   }) {
     return (
@@ -253,8 +267,8 @@ export default function PlayersPage() {
             <div>
               <Label htmlFor="play_day">Play Day</Label>
               <Select
-                name="play_day"
-                defaultValue={defaultValues?.play_day != null ? String(defaultValues.play_day) : undefined}
+                value={playDay}
+                onValueChange={(v) => setPlayDay(v ?? "")}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select day" />
@@ -282,8 +296,8 @@ export default function PlayersPage() {
         <div>
           <Label htmlFor="location_preference">Location Preference</Label>
           <Select
-            name="location_preference"
-            defaultValue={defaultValues?.location_preference ?? undefined}
+            value={locationPreference}
+            onValueChange={(v) => setLocationPreference(v ?? "")}
           >
             <SelectTrigger>
               <SelectValue placeholder="No preference" />
@@ -404,6 +418,8 @@ export default function PlayersPage() {
             setAddSegment("women");
             setAddCommitment("sub");
             setAddActive(true);
+            setAddPlayDay("");
+            setAddLocationPreference("");
           }
         }}>
           <DialogTrigger className={cn(buttonVariants({ variant: "default", size: "default" }))}>
@@ -422,6 +438,10 @@ export default function PlayersPage() {
               setCommitment={setAddCommitment}
               active={addActive}
               setActive={setAddActive}
+              playDay={addPlayDay}
+              setPlayDay={setAddPlayDay}
+              locationPreference={addLocationPreference}
+              setLocationPreference={setAddLocationPreference}
               submitLabel="Save"
             />
           </DialogContent>
@@ -554,6 +574,8 @@ export default function PlayersPage() {
                           setEditSegment(player.segment);
                           setEditCommitment(player.commitment);
                           setEditActive(player.active);
+                          setEditPlayDay(player.play_day != null ? String(player.play_day) : "");
+                          setEditLocationPreference(player.location_preference ?? "");
                         } else {
                           setEditingPlayer(null);
                         }
@@ -575,6 +597,10 @@ export default function PlayersPage() {
                           setCommitment={setEditCommitment}
                           active={editActive}
                           setActive={setEditActive}
+                          playDay={editPlayDay}
+                          setPlayDay={setEditPlayDay}
+                          locationPreference={editLocationPreference}
+                          setLocationPreference={setEditLocationPreference}
                           submitLabel="Update"
                         />
                       </DialogContent>
