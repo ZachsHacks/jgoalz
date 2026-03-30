@@ -29,8 +29,15 @@ export default function JoinPage() {
   const [commitment, setCommitment] = useState<Commitment | "">("");
   const [playDay, setPlayDay] = useState("");
   const [playTime, setPlayTime] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState<string>("");
   const [waiverAccepted, setWaiverAccepted] = useState(false);
   const [policyAccepted, setPolicyAccepted] = useState(false);
+
+  const JOIN_SEGMENT_LABELS: Record<string, string> = {
+    women: "Women (18+)",
+    teens: "Teen (Ages 14-17)",
+    girls: "Child (Under 13)",
+  };
 
   useEffect(() => {
     async function loadLocations() {
@@ -53,6 +60,10 @@ export default function JoinPage() {
     }
     if (!commitment) {
       setFormState({ status: "error", message: "Please select your commitment level." });
+      return;
+    }
+    if (!experienceLevel) {
+      setFormState({ status: "error", message: "Please select your experience level." });
       return;
     }
     if (!waiverAccepted) {
@@ -99,6 +110,7 @@ export default function JoinPage() {
       play_day: commitment === "permanent" && playDay !== "" ? parseInt(playDay, 10) : null,
       play_time: commitment === "permanent" && playTime.trim() ? playTime.trim() : null,
       location_preference: locationPreference || null,
+      experience_level: experienceLevel,
       active: true,
       waiver_accepted_at: new Date().toISOString(),
     };
@@ -195,11 +207,12 @@ export default function JoinPage() {
               {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
+                  Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="email"
                   type="email"
+                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
@@ -210,11 +223,12 @@ export default function JoinPage() {
               {/* Address */}
               <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                  Address
+                  Address <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="address"
                   type="text"
+                  required
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="123 Main St, Brooklyn, NY"
@@ -245,7 +259,36 @@ export default function JoinPage() {
                         onChange={() => setSegment(seg)}
                         className="accent-purple-600"
                       />
-                      <span className="text-sm text-gray-800">{SEGMENT_LABELS[seg]}</span>
+                      <span className="text-sm text-gray-800">{JOIN_SEGMENT_LABELS[seg] ?? SEGMENT_LABELS[seg]}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Experience Level */}
+              <div>
+                <p className="block text-sm font-medium text-gray-700 mb-2">
+                  Experience Level <span className="text-red-500">*</span>
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {["Beginner", "Experienced"].map((level) => (
+                    <label
+                      key={level}
+                      className={`flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${
+                        experienceLevel === level
+                          ? "border-purple-600 bg-purple-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="experience_level"
+                        value={level}
+                        checked={experienceLevel === level}
+                        onChange={() => setExperienceLevel(level)}
+                        className="accent-purple-600"
+                      />
+                      <span className="text-sm text-gray-800">{level}</span>
                     </label>
                   ))}
                 </div>
@@ -277,7 +320,7 @@ export default function JoinPage() {
                       type="number"
                       required
                       min={1}
-                      max={11}
+                      max={13}
                       value={age}
                       onChange={(e) => setAge(e.target.value)}
                       placeholder="Age"
@@ -290,11 +333,12 @@ export default function JoinPage() {
               {/* Emergency Contact */}
               <div>
                 <label htmlFor="emergency_contact" className="block text-sm font-medium text-gray-700 mb-1">
-                  Emergency Contact
+                  Emergency Contact <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="emergency_contact"
                   type="text"
+                  required
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
                   placeholder="Name and phone number"
@@ -306,10 +350,11 @@ export default function JoinPage() {
               {locations.length > 0 && (
                 <div>
                   <label htmlFor="location_preference" className="block text-sm font-medium text-gray-700 mb-1">
-                    Location Preference
+                    Location Preference <span className="text-red-500">*</span>
                   </label>
                   <select
                     id="location_preference"
+                    required
                     value={locationPreference}
                     onChange={(e) => setLocationPreference(e.target.value)}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
@@ -365,10 +410,11 @@ export default function JoinPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="play_day" className="block text-sm font-medium text-gray-700 mb-1">
-                      Play Day
+                      Play Day <span className="text-red-500">*</span>
                     </label>
                     <select
                       id="play_day"
+                      required
                       value={playDay}
                       onChange={(e) => setPlayDay(e.target.value)}
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
@@ -383,11 +429,12 @@ export default function JoinPage() {
                   </div>
                   <div>
                     <label htmlFor="play_time" className="block text-sm font-medium text-gray-700 mb-1">
-                      Play Time
+                      Play Time <span className="text-red-500">*</span>
                     </label>
                     <input
                       id="play_time"
                       type="text"
+                      required
                       value={playTime}
                       onChange={(e) => setPlayTime(e.target.value)}
                       placeholder="e.g. 7:00 PM"
