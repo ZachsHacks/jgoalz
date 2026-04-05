@@ -420,7 +420,7 @@ export default function PaymentsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit_notes">Notes</Label>
+                <Label htmlFor="edit_notes">Comments</Label>
                 <Input
                   id="edit_notes"
                   name="notes"

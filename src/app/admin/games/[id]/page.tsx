@@ -124,10 +124,10 @@ export default function GameDetailPage({
   }
 
   async function dropPlayer(gamePlayerId: string) {
-    if (!confirm("Drop this player from the roster?")) return;
+    if (!confirm("Remove this player from the roster?")) return;
     await supabase
       .from("game_players")
-      .update({ status: "dropped" })
+      .delete()
       .eq("id", gamePlayerId);
     loadRoster();
   }
@@ -394,44 +394,6 @@ export default function GameDetailPage({
                       </TableCell>
                     </TableRow>
                   ))}
-                {roster.filter((gp) => gp.status === "dropped").length > 0 && (
-                  <>
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-6"
-                      >
-                        Dropped Players
-                      </TableCell>
-                    </TableRow>
-                    {roster
-                      .filter((gp) => gp.status === "dropped")
-                      .map((gp) => (
-                        <TableRow key={gp.id} className="opacity-50">
-                          <TableCell className="font-medium">
-                            {gp.player.name}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {gp.player.phone ?? "--"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">dropped</Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(gp.joined_at).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }
-                            )}
-                          </TableCell>
-                          <TableCell />
-                        </TableRow>
-                      ))}
-                  </>
-                )}
               </TableBody>
             </Table>
           )}

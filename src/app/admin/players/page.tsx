@@ -48,6 +48,219 @@ import {
   DAY_NAMES,
 } from "@/types/database";
 
+function PlayerForm({
+  onSubmit,
+  defaultValues,
+  segment,
+  setSegment,
+  commitment,
+  setCommitment,
+  active,
+  setActive,
+  playDay,
+  setPlayDay,
+  locationPreference,
+  setLocationPreference,
+  locations,
+  submitLabel,
+}: {
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  defaultValues?: Player;
+  segment: Segment;
+  setSegment: (s: Segment) => void;
+  commitment: Commitment;
+  setCommitment: (c: Commitment) => void;
+  active: boolean;
+  setActive: (a: boolean) => void;
+  playDay: string;
+  setPlayDay: (v: string) => void;
+  locationPreference: string;
+  setLocationPreference: (v: string) => void;
+  locations: Location[];
+  submitLabel: string;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="name">Name</Label>
+        <Input
+          id="name"
+          name="name"
+          defaultValue={defaultValues?.name ?? ""}
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="segment">Segment</Label>
+        <Select
+          value={segment}
+          onValueChange={(v) => setSegment(v as Segment)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="women">{SEGMENT_LABELS.women}</SelectItem>
+            <SelectItem value="teens">{SEGMENT_LABELS.teens}</SelectItem>
+            <SelectItem value="girls">{SEGMENT_LABELS.girls}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label htmlFor="commitment">Commitment</Label>
+        <Select
+          value={commitment}
+          onValueChange={(v) => setCommitment(v as Commitment)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="permanent">{COMMITMENT_LABELS.permanent}</SelectItem>
+            <SelectItem value="sub">{COMMITMENT_LABELS.sub}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      {commitment === "permanent" && (
+        <>
+          <div>
+            <Label htmlFor="play_day">Play Day</Label>
+            <Select
+              value={playDay}
+              onValueChange={(v) => setPlayDay(v ?? "")}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select day" />
+              </SelectTrigger>
+              <SelectContent>
+                {DAY_NAMES.map((day, i) => (
+                  <SelectItem key={day} value={String(i)}>
+                    {day}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="play_time">Play Time</Label>
+            <Input
+              id="play_time"
+              name="play_time"
+              placeholder="e.g. 7:00 PM"
+              defaultValue={defaultValues?.play_time ?? ""}
+            />
+          </div>
+        </>
+      )}
+      <div>
+        <Label htmlFor="location_preference">Location</Label>
+        <Select
+          value={locationPreference}
+          onValueChange={(v) => setLocationPreference(v ?? "")}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="No preference" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">No preference</SelectItem>
+            {locations.map((loc) => (
+              <SelectItem key={loc.id} value={loc.name}>
+                {loc.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label htmlFor="phone">Phone</Label>
+        <Input
+          id="phone"
+          name="phone"
+          defaultValue={defaultValues?.phone ?? ""}
+        />
+      </div>
+      <div>
+        <Label htmlFor="phone2">Second Phone</Label>
+        <Input
+          id="phone2"
+          name="phone2"
+          defaultValue={defaultValues?.phone2 ?? ""}
+        />
+      </div>
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          defaultValue={defaultValues?.email ?? ""}
+        />
+      </div>
+      <div>
+        <Label htmlFor="address">Address</Label>
+        <Input
+          id="address"
+          name="address"
+          defaultValue={defaultValues?.address ?? ""}
+        />
+      </div>
+      {segment === "girls" && (
+        <>
+          <div>
+            <Label htmlFor="school">School</Label>
+            <Input
+              id="school"
+              name="school"
+              defaultValue={defaultValues?.school ?? ""}
+            />
+          </div>
+          <div>
+            <Label htmlFor="age">Age</Label>
+            <Input
+              id="age"
+              name="age"
+              type="number"
+              min={1}
+              max={18}
+              defaultValue={defaultValues?.age ?? ""}
+            />
+          </div>
+        </>
+      )}
+      <div>
+        <Label htmlFor="emergency_contact">Emergency Contact</Label>
+        <Input
+          id="emergency_contact"
+          name="emergency_contact"
+          defaultValue={defaultValues?.emergency_contact ?? ""}
+        />
+      </div>
+      <div>
+        <Label htmlFor="notes">Comments</Label>
+        <Textarea
+          id="notes"
+          name="notes"
+          rows={3}
+          defaultValue={defaultValues?.notes ?? ""}
+        />
+      </div>
+      <div className="flex items-center gap-3">
+        <Switch
+          id="active"
+          checked={active}
+          onCheckedChange={setActive}
+        />
+        <Label htmlFor="active" className="cursor-pointer">
+          {active ? "Active" : "Inactive"}
+        </Label>
+      </div>
+      <Button type="submit" className="w-full">
+        {submitLabel}
+      </Button>
+    </form>
+  );
+}
+
 export default function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -191,217 +404,6 @@ export default function PlayersPage() {
     loadPlayers();
   }
 
-  function PlayerForm({
-    onSubmit,
-    defaultValues,
-    segment,
-    setSegment,
-    commitment,
-    setCommitment,
-    active,
-    setActive,
-    playDay,
-    setPlayDay,
-    locationPreference,
-    setLocationPreference,
-    submitLabel,
-  }: {
-    onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
-    defaultValues?: Player;
-    segment: Segment;
-    setSegment: (s: Segment) => void;
-    commitment: Commitment;
-    setCommitment: (c: Commitment) => void;
-    active: boolean;
-    setActive: (a: boolean) => void;
-    playDay: string;
-    setPlayDay: (v: string) => void;
-    locationPreference: string;
-    setLocationPreference: (v: string) => void;
-    submitLabel: string;
-  }) {
-    return (
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div>
-          <Label htmlFor="name">Name</Label>
-          <Input
-            id="name"
-            name="name"
-            defaultValue={defaultValues?.name ?? ""}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="segment">Segment</Label>
-          <Select
-            value={segment}
-            onValueChange={(v) => setSegment(v as Segment)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="women">{SEGMENT_LABELS.women}</SelectItem>
-              <SelectItem value="teens">{SEGMENT_LABELS.teens}</SelectItem>
-              <SelectItem value="girls">{SEGMENT_LABELS.girls}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="commitment">Commitment</Label>
-          <Select
-            value={commitment}
-            onValueChange={(v) => setCommitment(v as Commitment)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="permanent">{COMMITMENT_LABELS.permanent}</SelectItem>
-              <SelectItem value="sub">{COMMITMENT_LABELS.sub}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {commitment === "permanent" && (
-          <>
-            <div>
-              <Label htmlFor="play_day">Play Day</Label>
-              <Select
-                value={playDay}
-                onValueChange={(v) => setPlayDay(v ?? "")}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select day" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DAY_NAMES.map((day, i) => (
-                    <SelectItem key={day} value={String(i)}>
-                      {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="play_time">Play Time</Label>
-              <Input
-                id="play_time"
-                name="play_time"
-                placeholder="e.g. 7:00 PM"
-                defaultValue={defaultValues?.play_time ?? ""}
-              />
-            </div>
-          </>
-        )}
-        <div>
-          <Label htmlFor="location_preference">Location Preference</Label>
-          <Select
-            value={locationPreference}
-            onValueChange={(v) => setLocationPreference(v ?? "")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="No preference" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">No preference</SelectItem>
-              {locations.map((loc) => (
-                <SelectItem key={loc.id} value={loc.name}>
-                  {loc.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="phone">Phone</Label>
-          <Input
-            id="phone"
-            name="phone"
-            defaultValue={defaultValues?.phone ?? ""}
-          />
-        </div>
-        <div>
-          <Label htmlFor="phone2">Second Phone</Label>
-          <Input
-            id="phone2"
-            name="phone2"
-            defaultValue={defaultValues?.phone2 ?? ""}
-          />
-        </div>
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            defaultValue={defaultValues?.email ?? ""}
-          />
-        </div>
-        <div>
-          <Label htmlFor="address">Address</Label>
-          <Input
-            id="address"
-            name="address"
-            defaultValue={defaultValues?.address ?? ""}
-          />
-        </div>
-        {segment === "girls" && (
-          <>
-            <div>
-              <Label htmlFor="school">School</Label>
-              <Input
-                id="school"
-                name="school"
-                defaultValue={defaultValues?.school ?? ""}
-              />
-            </div>
-            <div>
-              <Label htmlFor="age">Age</Label>
-              <Input
-                id="age"
-                name="age"
-                type="number"
-                min={1}
-                max={18}
-                defaultValue={defaultValues?.age ?? ""}
-              />
-            </div>
-          </>
-        )}
-        <div>
-          <Label htmlFor="emergency_contact">Emergency Contact</Label>
-          <Input
-            id="emergency_contact"
-            name="emergency_contact"
-            defaultValue={defaultValues?.emergency_contact ?? ""}
-          />
-        </div>
-        <div>
-          <Label htmlFor="notes">Notes</Label>
-          <Textarea
-            id="notes"
-            name="notes"
-            rows={3}
-            defaultValue={defaultValues?.notes ?? ""}
-          />
-        </div>
-        <div className="flex items-center gap-3">
-          <Switch
-            id="active"
-            checked={active}
-            onCheckedChange={setActive}
-          />
-          <Label htmlFor="active" className="cursor-pointer">
-            {active ? "Active" : "Inactive"}
-          </Label>
-        </div>
-        <Button type="submit" className="w-full">
-          {submitLabel}
-        </Button>
-      </form>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -442,6 +444,7 @@ export default function PlayersPage() {
               setPlayDay={setAddPlayDay}
               locationPreference={addLocationPreference}
               setLocationPreference={setAddLocationPreference}
+              locations={locations}
               submitLabel="Save"
             />
           </DialogContent>
@@ -601,6 +604,7 @@ export default function PlayersPage() {
                           setPlayDay={setEditPlayDay}
                           locationPreference={editLocationPreference}
                           setLocationPreference={setEditLocationPreference}
+                          locations={locations}
                           submitLabel="Update"
                         />
                       </DialogContent>
@@ -644,7 +648,7 @@ export default function PlayersPage() {
                   {player.location_preference && (
                     <div className="flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5" />
-                      <span>Prefers: {player.location_preference}</span>
+                      <span>{player.location_preference}</span>
                     </div>
                   )}
                   {player.commitment === "permanent" && (player.play_day != null || player.play_time) && (
