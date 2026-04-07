@@ -25,6 +25,7 @@ export type Player = {
   school: string | null;
   age: number | null;
   experience_level: string | null;
+  marital_status: string | null;
   waiver_accepted_at: string | null;
   created_at: string;
 };

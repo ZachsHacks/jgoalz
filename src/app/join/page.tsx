@@ -30,6 +30,7 @@ export default function JoinPage() {
   const [playDay, setPlayDay] = useState("");
   const [playTime, setPlayTime] = useState("");
   const [experienceLevel, setExperienceLevel] = useState<string>("");
+  const [maritalStatus, setMaritalStatus] = useState<string>("");
   const [waiverAccepted, setWaiverAccepted] = useState(false);
   const [policyAccepted, setPolicyAccepted] = useState(false);
 
@@ -115,9 +116,14 @@ export default function JoinPage() {
       waiver_accepted_at: new Date().toISOString(),
     };
 
-    if (segment === "girls") {
+    if (segment === "girls" || segment === "teens") {
       insertData.school = school.trim() || null;
       insertData.age = age !== "" ? parseInt(age, 10) : null;
+    }
+
+    if (segment === "women") {
+      insertData.age = age !== "" ? parseInt(age, 10) : null;
+      insertData.marital_status = maritalStatus || null;
     }
 
     const { error } = await supabase.from("players").insert(insertData);
@@ -294,8 +300,8 @@ export default function JoinPage() {
                 </div>
               </div>
 
-              {/* Girls-only fields */}
-              {segment === "girls" && (
+              {/* Girls + Teens: School and Age */}
+              {(segment === "girls" || segment === "teens") && (
                 <>
                   <div>
                     <label htmlFor="school" className="block text-sm font-medium text-gray-700 mb-1">
@@ -320,12 +326,60 @@ export default function JoinPage() {
                       type="number"
                       required
                       min={1}
-                      max={13}
+                      max={segment === "girls" ? 13 : 17}
                       value={age}
                       onChange={(e) => setAge(e.target.value)}
                       placeholder="Age"
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
+                  </div>
+                </>
+              )}
+
+              {/* Women: Age and Marital Status */}
+              {segment === "women" && (
+                <>
+                  <div>
+                    <label htmlFor="age" className="block text-sm font-medium text-gray-700 mb-1">
+                      Age <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="age"
+                      type="number"
+                      required
+                      min={18}
+                      value={age}
+                      onChange={(e) => setAge(e.target.value)}
+                      placeholder="Age"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <p className="block text-sm font-medium text-gray-700 mb-2">
+                      Marital Status <span className="text-red-500">*</span>
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {["Single", "Married"].map((status) => (
+                        <label
+                          key={status}
+                          className={`flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${
+                            maritalStatus === status
+                              ? "border-purple-600 bg-purple-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="marital_status"
+                            value={status}
+                            checked={maritalStatus === status}
+                            onChange={() => setMaritalStatus(status)}
+                            className="accent-purple-600"
+                          />
+                          <span className="text-sm text-gray-800">{status}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}

@@ -60,6 +60,10 @@ CREATE POLICY "Full access" ON reviews FOR ALL USING (true) WITH CHECK (true);
 ALTER TABLE players ADD COLUMN IF NOT EXISTS experience_level text
   CHECK (experience_level IS NULL OR experience_level IN ('beginner', 'experienced'));
 
+-- 5b. Marital status for women
+ALTER TABLE players ADD COLUMN IF NOT EXISTS marital_status text
+  CHECK (marital_status IS NULL OR marital_status IN ('Single', 'Married'));
+
 -- 6. Cancellation policy acknowledgments (per session signup)
 ALTER TABLE session_players ADD COLUMN IF NOT EXISTS policy_accepted boolean NOT NULL DEFAULT false;
 

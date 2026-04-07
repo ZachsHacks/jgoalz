@@ -61,6 +61,8 @@ function PlayerForm({
   setPlayDay,
   locationPreference,
   setLocationPreference,
+  maritalStatus,
+  setMaritalStatus,
   locations,
   submitLabel,
 }: {
@@ -76,6 +78,8 @@ function PlayerForm({
   setPlayDay: (v: string) => void;
   locationPreference: string;
   setLocationPreference: (v: string) => void;
+  maritalStatus: string;
+  setMaritalStatus: (v: string) => void;
   locations: Location[];
   submitLabel: string;
 }) {
@@ -204,7 +208,7 @@ function PlayerForm({
           defaultValue={defaultValues?.address ?? ""}
         />
       </div>
-      {segment === "girls" && (
+      {(segment === "girls" || segment === "teens") && (
         <>
           <div>
             <Label htmlFor="school">School</Label>
@@ -221,9 +225,38 @@ function PlayerForm({
               name="age"
               type="number"
               min={1}
-              max={18}
+              max={segment === "girls" ? 13 : 17}
               defaultValue={defaultValues?.age ?? ""}
             />
+          </div>
+        </>
+      )}
+      {segment === "women" && (
+        <>
+          <div>
+            <Label htmlFor="age">Age</Label>
+            <Input
+              id="age"
+              name="age"
+              type="number"
+              min={18}
+              defaultValue={defaultValues?.age ?? ""}
+            />
+          </div>
+          <div>
+            <Label htmlFor="marital_status">Marital Status</Label>
+            <Select
+              value={maritalStatus}
+              onValueChange={(v) => setMaritalStatus(v ?? "")}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Single">Single</SelectItem>
+                <SelectItem value="Married">Married</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </>
       )}
@@ -279,6 +312,8 @@ export default function PlayersPage() {
   const [editPlayDay, setEditPlayDay] = useState("");
   const [addLocationPreference, setAddLocationPreference] = useState("");
   const [editLocationPreference, setEditLocationPreference] = useState("");
+  const [addMaritalStatus, setAddMaritalStatus] = useState("");
+  const [editMaritalStatus, setEditMaritalStatus] = useState("");
   const [locations, setLocations] = useState<Location[]>([]);
 
   async function loadPlayers() {
@@ -334,14 +369,16 @@ export default function PlayersPage() {
       location_preference: addLocationPreference || null,
       phone2: (form.get("phone2") as string) || null,
       active: addActive,
-      school: addSegment === "girls" ? (form.get("school") as string) || null : null,
-      age: addSegment === "girls" ? parseInt(form.get("age") as string) || null : null,
+      school: (addSegment === "girls" || addSegment === "teens") ? (form.get("school") as string) || null : null,
+      age: (form.get("age") as string) ? parseInt(form.get("age") as string) : null,
+      marital_status: addSegment === "women" ? addMaritalStatus || null : null,
     });
     setShowAddPlayer(false);
     setAddSegment("women");
     setAddCommitment("sub");
     setAddActive(true);
     setAddPlayDay("");
+    setAddMaritalStatus("");
     setAddLocationPreference("");
     loadPlayers();
   }
@@ -366,8 +403,9 @@ export default function PlayersPage() {
         location_preference: editLocationPreference || null,
         phone2: (form.get("phone2") as string) || null,
         active: editActive,
-        school: editSegment === "girls" ? (form.get("school") as string) || null : null,
-        age: editSegment === "girls" ? parseInt(form.get("age") as string) || null : null,
+        school: (editSegment === "girls" || editSegment === "teens") ? (form.get("school") as string) || null : null,
+        age: (form.get("age") as string) ? parseInt(form.get("age") as string) : null,
+        marital_status: editSegment === "women" ? editMaritalStatus || null : null,
       })
       .eq("id", editingPlayer.id);
     setEditingPlayer(null);
@@ -444,6 +482,8 @@ export default function PlayersPage() {
               setPlayDay={setAddPlayDay}
               locationPreference={addLocationPreference}
               setLocationPreference={setAddLocationPreference}
+              maritalStatus={addMaritalStatus}
+              setMaritalStatus={setAddMaritalStatus}
               locations={locations}
               submitLabel="Save"
             />
@@ -579,6 +619,7 @@ export default function PlayersPage() {
                           setEditActive(player.active);
                           setEditPlayDay(player.play_day != null ? String(player.play_day) : "");
                           setEditLocationPreference(player.location_preference ?? "");
+                          setEditMaritalStatus(player.marital_status ?? "");
                         } else {
                           setEditingPlayer(null);
                         }
@@ -604,6 +645,8 @@ export default function PlayersPage() {
                           setPlayDay={setEditPlayDay}
                           locationPreference={editLocationPreference}
                           setLocationPreference={setEditLocationPreference}
+                          maritalStatus={editMaritalStatus}
+                          setMaritalStatus={setEditMaritalStatus}
                           locations={locations}
                           submitLabel="Update"
                         />
@@ -661,14 +704,19 @@ export default function PlayersPage() {
                       </span>
                     </div>
                   )}
-                  {player.segment === "girls" && player.school && (
+                  {(player.segment === "girls" || player.segment === "teens") && player.school && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs">School: {player.school}</span>
                     </div>
                   )}
-                  {player.segment === "girls" && player.age != null && (
+                  {player.age != null && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs">Age: {player.age}</span>
+                    </div>
+                  )}
+                  {player.segment === "women" && player.marital_status && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs">{player.marital_status}</span>
                     </div>
                   )}
                   {player.emergency_contact && (
