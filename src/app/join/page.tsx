@@ -359,7 +359,7 @@ export default function JoinPage() {
                       Marital Status <span className="text-red-500">*</span>
                     </p>
                     <div className="grid grid-cols-2 gap-2">
-                      {["Single", "Married"].map((status) => (
+                      {["Single", "Married", "Other"].map((status) => (
                         <label
                           key={status}
                           className={`flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${

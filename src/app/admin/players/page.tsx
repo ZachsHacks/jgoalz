@@ -255,6 +255,7 @@ function PlayerForm({
               <SelectContent>
                 <SelectItem value="Single">Single</SelectItem>
                 <SelectItem value="Married">Married</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -355,7 +356,7 @@ export default function PlayersPage() {
   async function handleAddPlayer(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
-    await supabase.from("players").insert({
+    const { error } = await supabase.from("players").insert({
       name: form.get("name") as string,
       phone: (form.get("phone") as string) || null,
       email: (form.get("email") as string) || null,
@@ -373,6 +374,10 @@ export default function PlayersPage() {
       age: (form.get("age") as string) ? parseInt(form.get("age") as string) : null,
       marital_status: addSegment === "women" ? addMaritalStatus || null : null,
     });
+    if (error) {
+      alert("Failed to save player: " + error.message);
+      return;
+    }
     setShowAddPlayer(false);
     setAddSegment("women");
     setAddCommitment("sub");
@@ -387,7 +392,7 @@ export default function PlayersPage() {
     e.preventDefault();
     if (!editingPlayer) return;
     const form = new FormData(e.currentTarget);
-    await supabase
+    const { error } = await supabase
       .from("players")
       .update({
         name: form.get("name") as string,
@@ -408,6 +413,10 @@ export default function PlayersPage() {
         marital_status: editSegment === "women" ? editMaritalStatus || null : null,
       })
       .eq("id", editingPlayer.id);
+    if (error) {
+      alert("Failed to update player: " + error.message);
+      return;
+    }
     setEditingPlayer(null);
     loadPlayers();
   }

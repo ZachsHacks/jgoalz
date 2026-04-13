@@ -62,7 +62,7 @@ ALTER TABLE players ADD COLUMN IF NOT EXISTS experience_level text
 
 -- 5b. Marital status for women
 ALTER TABLE players ADD COLUMN IF NOT EXISTS marital_status text
-  CHECK (marital_status IS NULL OR marital_status IN ('Single', 'Married'));
+  CHECK (marital_status IS NULL OR marital_status IN ('Single', 'Married', 'Other'));
 
 -- 6. Cancellation policy acknowledgments (per session signup)
 ALTER TABLE session_players ADD COLUMN IF NOT EXISTS policy_accepted boolean NOT NULL DEFAULT false;
