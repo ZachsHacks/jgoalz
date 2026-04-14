@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 const tabs = [
   { label: "Home", href: "/portal" },
   { label: "Schedule", href: "/calendar" },
-  { label: "Join", href: "/join" },
+  { label: "Register", href: "/join" },
+  { label: "My Account", href: "/my" },
 ];
 
 export default function PortalNav() {

@@ -60,7 +60,10 @@ CREATE POLICY "Full access" ON reviews FOR ALL USING (true) WITH CHECK (true);
 ALTER TABLE players ADD COLUMN IF NOT EXISTS experience_level text
   CHECK (experience_level IS NULL OR experience_level IN ('beginner', 'experienced'));
 
--- 5b. Marital status for women
+-- 5b. Password hash for player auth
+ALTER TABLE players ADD COLUMN IF NOT EXISTS password_hash text;
+
+-- 5c. Marital status for women
 ALTER TABLE players ADD COLUMN IF NOT EXISTS marital_status text
   CHECK (marital_status IS NULL OR marital_status IN ('Single', 'Married', 'Other'));
 

@@ -31,6 +31,8 @@ export default function JoinPage() {
   const [playTime, setPlayTime] = useState("");
   const [experienceLevel, setExperienceLevel] = useState<string>("");
   const [maritalStatus, setMaritalStatus] = useState<string>("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [waiverAccepted, setWaiverAccepted] = useState(false);
   const [policyAccepted, setPolicyAccepted] = useState(false);
 
@@ -67,6 +69,14 @@ export default function JoinPage() {
       setFormState({ status: "error", message: "Please select your experience level." });
       return;
     }
+    if (password.length < 4) {
+      setFormState({ status: "error", message: "Password must be at least 4 characters." });
+      return;
+    }
+    if (password !== confirmPassword) {
+      setFormState({ status: "error", message: "Passwords do not match." });
+      return;
+    }
     if (!waiverAccepted) {
       setFormState({ status: "error", message: "You must accept the waiver to register." });
       return;
@@ -78,62 +88,40 @@ export default function JoinPage() {
 
     setFormState({ status: "submitting" });
 
-    const normalizedPhone = phone.replace(/\D/g, "");
-
-    // Duplicate check
-    const { data: existing } = await supabase
-      .from("players")
-      .select("id")
-      .eq("segment", segment);
-
-    const duplicate = (existing ?? []).find((p: { id: string } & Record<string, unknown>) => {
-      const existingPhone = (p as unknown as { phone?: string }).phone;
-      if (!existingPhone) return false;
-      return existingPhone.replace(/\D/g, "") === normalizedPhone;
-    });
-
-    if (duplicate) {
-      setFormState({
-        status: "error",
-        message: "A player with this phone number is already registered in this group.",
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone,
+          email: email.trim() || null,
+          address: address.trim() || null,
+          segment,
+          emergency_contact: emergencyContact.trim() || null,
+          commitment,
+          play_day: commitment === "permanent" && playDay !== "" ? parseInt(playDay, 10) : null,
+          play_time: commitment === "permanent" && playTime.trim() ? playTime.trim() : null,
+          location_preference: locationPreference || null,
+          experience_level: experienceLevel || null,
+          school: (segment === "girls" || segment === "teens") ? school.trim() || null : null,
+          age: age !== "" ? parseInt(age, 10) : null,
+          marital_status: segment === "women" ? maritalStatus || null : null,
+          password,
+        }),
       });
-      return;
-    }
 
-    const insertData: Record<string, unknown> = {
-      name: name.trim(),
-      phone: normalizedPhone,
-      email: email.trim() || null,
-      address: address.trim() || null,
-      segment,
-      emergency_contact: emergencyContact.trim() || null,
-      commitment,
-      play_day: commitment === "permanent" && playDay !== "" ? parseInt(playDay, 10) : null,
-      play_time: commitment === "permanent" && playTime.trim() ? playTime.trim() : null,
-      location_preference: locationPreference || null,
-      experience_level: experienceLevel,
-      active: true,
-      waiver_accepted_at: new Date().toISOString(),
-    };
+      const result = await res.json();
 
-    if (segment === "girls" || segment === "teens") {
-      insertData.school = school.trim() || null;
-      insertData.age = age !== "" ? parseInt(age, 10) : null;
-    }
+      if (!res.ok) {
+        setFormState({ status: "error", message: result.error || "Something went wrong." });
+        return;
+      }
 
-    if (segment === "women") {
-      insertData.age = age !== "" ? parseInt(age, 10) : null;
-      insertData.marital_status = maritalStatus || null;
-    }
-
-    const { error } = await supabase.from("players").insert(insertData);
-
-    if (error) {
+      setFormState({ status: "done" });
+    } catch {
       setFormState({ status: "error", message: "Something went wrong. Please try again." });
-      return;
     }
-
-    setFormState({ status: "done" });
   }
 
   const isSubmitting = formState.status === "submitting";
@@ -157,9 +145,15 @@ export default function JoinPage() {
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">You&apos;re registered!</h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 mb-4">
               The organizer will be in touch about upcoming games.
             </p>
+            <a
+              href="/my"
+              className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-medium text-sm px-5 py-2 rounded-lg transition-colors"
+            >
+              Go to My Account
+            </a>
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm p-8">
@@ -497,6 +491,38 @@ export default function JoinPage() {
                   </div>
                 </div>
               )}
+
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Create Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={4}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 4 characters"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="confirm_password"
+                  type="password"
+                  required
+                  minLength={4}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter password"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
 
               {/* Waiver */}
               <div className="flex items-start gap-3 pt-2">
