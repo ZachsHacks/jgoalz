@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Jgoalz",
-  description: "Sports session management for Jgoalz",
+  title: "Jgoalz Sports",
+  description: "Sports session management for Jgoalz Sports",
 };
 
 export default function RootLayout({

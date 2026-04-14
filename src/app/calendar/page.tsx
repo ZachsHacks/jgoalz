@@ -62,6 +62,7 @@ export default function CalendarPage() {
   const [joinError, setJoinError] = useState<Record<string, string>>({});
   const [justJoined, setJustJoined] = useState<Set<string>>(new Set());
   const [rosters, setRosters] = useState<Record<string, SessionRoster>>({});
+  const [cancelTokens, setCancelTokens] = useState<Record<string, string>>({});
 
   const getWeekRange = useCallback(() => {
     const now = new Date();
@@ -113,19 +114,24 @@ export default function CalendarPage() {
       if (sessionIds.length > 0 && playerIds.length > 0) {
         const { data: spData } = await supabase
           .from("session_players")
-          .select("session_id, player_id, status")
+          .select("session_id, player_id, status, cancel_token")
           .in("session_id", sessionIds)
           .in("player_id", playerIds);
 
         const registered = new Set<string>();
+        const tokens: Record<string, string> = {};
         if (spData) {
-          for (const sp of spData) {
+          for (const sp of spData as { session_id: string; player_id: string; status: string; cancel_token: string }[]) {
             if (sp.status === "confirmed") {
               registered.add(sp.session_id);
+              if (sp.cancel_token) {
+                tokens[sp.session_id] = sp.cancel_token;
+              }
             }
           }
         }
         setRegisteredSessionIds(registered);
+        setCancelTokens(tokens);
       }
 
       // Load rosters for all filtered sessions (player names + status)
@@ -313,7 +319,7 @@ export default function CalendarPage() {
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 py-6 px-4">
         <div className="max-w-lg mx-auto">
-          <h1 className="text-2xl font-bold text-white text-center">Jgoalz Weekly Schedule</h1>
+          <h1 className="text-2xl font-bold text-white text-center">Jgoalz Sports</h1>
         </div>
       </div>
 
@@ -413,12 +419,22 @@ export default function CalendarPage() {
                           <h3 className="font-semibold text-gray-900">{session.game.name}</h3>
                           {/* Status badge */}
                           {(isRegistered || wasJustJoined) && (
-                            <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              You&apos;re In
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                You&apos;re In
+                              </span>
+                              {cancelTokens[session.id] && (
+                                <a
+                                  href={`/cancel/${cancelTokens[session.id]}`}
+                                  className="text-xs text-red-500 hover:text-red-700 font-medium"
+                                >
+                                  Cancel
+                                </a>
+                              )}
+                            </div>
                           )}
                           {!isRegistered && !wasJustJoined && isFull && (
                             <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">

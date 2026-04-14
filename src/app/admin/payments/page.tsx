@@ -40,7 +40,7 @@ import type { PaymentWithDetails, Segment } from "@/types/database";
 import { SEGMENT_LABELS } from "@/types/database";
 
 const DEFAULT_REMINDER_TEMPLATE = (name: string, amount: string) =>
-  `Hi ${name}, friendly reminder about your $${amount} balance for Jgoalz. Please send payment via Zelle. Thank you!`;
+  `Hi ${name}, friendly reminder about your $${amount} balance for Jgoalz Sports. Please send payment via Zelle. Thank you!`;
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<PaymentWithDetails[]>([]);

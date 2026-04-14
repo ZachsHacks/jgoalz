@@ -131,7 +131,7 @@ export default function JoinPage() {
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 py-6 px-4">
         <div className="max-w-lg mx-auto">
-          <h1 className="text-2xl font-bold text-white text-center">Jgoalz</h1>
+          <h1 className="text-2xl font-bold text-white text-center">Jgoalz Sports</h1>
         </div>
       </div>
 
@@ -157,7 +157,7 @@ export default function JoinPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm p-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-1">Join Jgoalz</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-1">Join Jgoalz Sports</h2>
             <p className="text-gray-500 text-sm mb-6">Fill out the form below to register as a player.</p>
 
             {formState.status === "error" && (
@@ -533,7 +533,7 @@ export default function JoinPage() {
                   className="mt-0.5"
                 />
                 <label htmlFor="waiver" className="text-sm text-gray-700 leading-tight cursor-pointer">
-                  I have read and agree to the Jgoalz waiver and liability release.
+                  I have read and agree to the Jgoalz Sports waiver and liability release.
                 </label>
               </div>
 

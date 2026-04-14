@@ -37,7 +37,7 @@ export function AdminNav() {
             J
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight">Jgoalz</h1>
+            <h1 className="text-lg font-bold tracking-tight">Jgoalz Sports</h1>
             <p className="text-xs text-sidebar-foreground/60">Sports Manager</p>
           </div>
         </div>

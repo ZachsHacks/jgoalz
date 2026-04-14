@@ -111,7 +111,7 @@ export default function SetupPage() {
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 py-6 px-4">
         <div className="max-w-lg mx-auto text-center">
-          <h1 className="text-2xl font-bold text-white">Jgoalz</h1>
+          <h1 className="text-2xl font-bold text-white">Jgoalz Sports</h1>
           <p className="text-purple-200 text-sm mt-1">Set Up Your Account</p>
         </div>
       </div>
