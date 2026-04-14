@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS locations (
 );
 
 -- Seed current locations
-INSERT INTO locations (name) VALUES ('Boro Park'), ('Williamsburg')
+INSERT INTO locations (name) VALUES ('Boro Park'), ('Williamsburg'), ('Flatbush')
 ON CONFLICT (name) DO NOTHING;
 
 ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
