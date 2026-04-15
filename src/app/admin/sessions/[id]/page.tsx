@@ -53,6 +53,7 @@ import type {
   Driver,
   DriverAssignment,
   Segment,
+  PlayerCredit,
 } from "@/types/database";
 import { SEGMENT_COLORS, SEGMENT_LABELS } from "@/types/database";
 
@@ -70,6 +71,7 @@ export default function SessionDetailPage({
   const [paymentMap, setPaymentMap] = useState<Record<string, Payment>>({});
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [driverAssignments, setDriverAssignments] = useState<DriverAssignment[]>([]);
+  const [creditMap, setCreditMap] = useState<Record<string, PlayerCredit>>({});
   const [loading, setLoading] = useState(true);
 
   // Add drop-in player state
@@ -122,6 +124,19 @@ export default function SessionDetailPage({
       .eq("session_id", id)
       .order("sort_order");
     setDriverAssignments((assignData ?? []) as DriverAssignment[]);
+
+    // Load player credits for this game
+    if (sess?.game?.id) {
+      const { data: creditsData } = await supabase
+        .from("player_credits")
+        .select("*")
+        .eq("game_id", sess.game.id);
+      const cMap: Record<string, PlayerCredit> = {};
+      for (const c of (creditsData ?? []) as PlayerCredit[]) {
+        cMap[c.player_id] = c;
+      }
+      setCreditMap(cMap);
+    }
 
     setLoading(false);
   }, [id]);
@@ -246,6 +261,38 @@ export default function SessionDetailPage({
       .from("payments")
       .update({ status: "paid", paid_at: new Date().toISOString() })
       .eq("id", payment.id);
+    loadData();
+  }
+
+  async function undoPaid(playerId: string) {
+    const payment = paymentMap[playerId];
+    if (!payment) return;
+    await supabase
+      .from("payments")
+      .update({ status: "pending", paid_at: null })
+      .eq("id", payment.id);
+    loadData();
+  }
+
+  async function adjustCredits(playerId: string, delta: number) {
+    if (!session) return;
+    const existing = creditMap[playerId];
+    if (existing) {
+      const newVal = Math.max(0, existing.credits_purchased + delta);
+      await supabase
+        .from("player_credits")
+        .update({ credits_purchased: newVal, updated_at: new Date().toISOString() })
+        .eq("id", existing.id);
+    } else {
+      // Create new record
+      const newVal = Math.max(0, delta);
+      await supabase.from("player_credits").insert({
+        player_id: playerId,
+        game_id: session.game.id,
+        credits_purchased: newVal,
+        credits_used: 0,
+      });
+    }
     loadData();
   }
 
@@ -656,6 +703,16 @@ export default function SessionDetailPage({
                                 Paid
                               </Button>
                             )}
+                            {payment && payment.status === "paid" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => undoPaid(sp.player_id)}
+                                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                              >
+                                Undo Paid
+                              </Button>
+                            )}
                             {sp.status === "confirmed" &&
                               (session.status === "in_progress" ||
                                 session.status === "completed") && (
@@ -676,6 +733,88 @@ export default function SessionDetailPage({
                               className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Credit Management */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg">Credit Management</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {confirmedPlayers.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">
+              No confirmed players in this session.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Player</TableHead>
+                    <TableHead className="text-center">Purchased</TableHead>
+                    <TableHead className="text-center">Used</TableHead>
+                    <TableHead className="text-center">Remaining</TableHead>
+                    <TableHead className="text-center">Adjust</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {confirmedPlayers.map((sp) => {
+                    const credit = creditMap[sp.player_id];
+                    const purchased = credit?.credits_purchased ?? 0;
+                    const used = credit?.credits_used ?? 0;
+                    const remaining = purchased - used;
+                    return (
+                      <TableRow key={sp.id}>
+                        <TableCell className="font-medium">
+                          {sp.player.name}
+                        </TableCell>
+                        <TableCell className="text-center">{purchased}</TableCell>
+                        <TableCell className="text-center">{used}</TableCell>
+                        <TableCell className="text-center">
+                          <span
+                            className={
+                              remaining < 0
+                                ? "text-red-600 font-medium"
+                                : remaining === 0
+                                  ? "text-muted-foreground"
+                                  : "text-green-700 font-medium"
+                            }
+                          >
+                            {remaining}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => adjustCredits(sp.player_id, -1)}
+                              disabled={purchased === 0 && !credit}
+                              className="w-8 h-8 p-0"
+                            >
+                              -
+                            </Button>
+                            <span className="w-8 text-center font-medium">
+                              {purchased}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => adjustCredits(sp.player_id, 1)}
+                              className="w-8 h-8 p-0"
+                            >
+                              +
                             </Button>
                           </div>
                         </TableCell>
