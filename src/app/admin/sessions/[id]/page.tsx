@@ -335,6 +335,53 @@ export default function SessionDetailPage({
     loadData();
   }
 
+  async function cancelPlayer(sp: SessionPlayerWithPlayer) {
+    if (!session) return;
+    if (!confirm(`Cancel ${sp.player.name}'s registration for this session? They'll remain on the permanent roster for future sessions.`)) return;
+
+    // Determine if late (within 24 hours)
+    const sessionDateTime = new Date(session.date + "T" + (session.game.time || "00:00"));
+    const now = new Date();
+    const hoursUntil = (sessionDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const newStatus = hoursUntil <= 24 ? "cancelled_late" : "cancelled_early";
+
+    await supabase
+      .from("session_players")
+      .update({ status: newStatus, cancelled_at: new Date().toISOString() })
+      .eq("id", sp.id);
+
+    // If cancelled early, refund credit
+    if (newStatus === "cancelled_early") {
+      const { data: creditRows } = await supabase
+        .from("player_credits")
+        .select("*")
+        .eq("player_id", sp.player_id)
+        .eq("game_id", session.game_id)
+        .limit(1);
+      if (creditRows && creditRows.length > 0 && creditRows[0].credits_used > 0) {
+        await supabase
+          .from("player_credits")
+          .update({ credits_used: creditRows[0].credits_used - 1 })
+          .eq("id", creditRows[0].id);
+      }
+    }
+
+    // Increment spots_remaining
+    await supabase
+      .from("sessions")
+      .update({ spots_remaining: session.spots_remaining + 1 })
+      .eq("id", session.id);
+
+    // Delete payment
+    await supabase
+      .from("payments")
+      .delete()
+      .eq("session_id", session.id)
+      .eq("player_id", sp.player_id);
+
+    loadData();
+  }
+
   async function assignDriver(playerId: string, driverId: string) {
     // Remove existing assignment for this player
     await supabase
@@ -726,6 +773,12 @@ export default function SessionDetailPage({
                                   No Show
                                 </Button>
                               )}
+                            {sp.status === "confirmed" && (
+                              <Button size="sm" variant="ghost" onClick={() => cancelPlayer(sp)}
+                                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50">
+                                Cancel
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"

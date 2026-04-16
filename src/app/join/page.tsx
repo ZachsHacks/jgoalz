@@ -39,7 +39,7 @@ export default function JoinPage() {
   const JOIN_SEGMENT_LABELS: Record<string, string> = {
     women: "Women (18+)",
     teens: "Teen (Ages 14-17)",
-    girls: "Child (Under 13)",
+    girls: "Child (Ages 13 and under)",
   };
 
   useEffect(() => {
@@ -319,7 +319,7 @@ export default function JoinPage() {
                       id="age"
                       type="number"
                       required
-                      min={1}
+                      min={segment === "teens" ? 14 : 1}
                       max={segment === "girls" ? 13 : 17}
                       value={age}
                       onChange={(e) => setAge(e.target.value)}

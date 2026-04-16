@@ -28,6 +28,8 @@ export type Player = {
   marital_status: string | null;
   password_hash: string | null;
   waiver_accepted_at: string | null;
+  policy_accepted_at: string | null;
+  is_admin: boolean;
   created_at: string;
 };
 
@@ -42,6 +44,8 @@ export type Game = {
   capacity: number;
   price_per_player: number;
   transport_fee: number | null;
+  requires_transport: boolean;
+  archived: boolean;
   active: boolean;
   created_at: string;
 };
@@ -168,8 +172,8 @@ export const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"
 // Segment display helpers
 export const SEGMENT_LABELS: Record<Segment, string> = {
   women: "Women (18+)",
-  teens: "Teen Girls (13-17)",
-  girls: "Girls (Under 12)",
+  teens: "Teen Girls (Ages 14-17)",
+  girls: "Girls (Ages 13 and under)",
 };
 
 export const SEGMENT_COLORS: Record<Segment, { bg: string; text: string; badge: string }> = {

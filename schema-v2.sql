@@ -13,6 +13,7 @@ ALTER TABLE players ADD COLUMN IF NOT EXISTS active boolean NOT NULL DEFAULT tru
 ALTER TABLE players ADD COLUMN IF NOT EXISTS school text;
 ALTER TABLE players ADD COLUMN IF NOT EXISTS age integer;
 ALTER TABLE players ADD COLUMN IF NOT EXISTS waiver_accepted_at timestamptz;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS policy_accepted_at timestamptz;
 
 -- 2. Locations reference table (extensible)
 CREATE TABLE IF NOT EXISTS locations (
@@ -69,6 +70,15 @@ ALTER TABLE players ADD COLUMN IF NOT EXISTS marital_status text
 
 -- 6. Cancellation policy acknowledgments (per session signup)
 ALTER TABLE session_players ADD COLUMN IF NOT EXISTS policy_accepted boolean NOT NULL DEFAULT false;
+
+-- 7. Admin flag for players
+ALTER TABLE players ADD COLUMN IF NOT EXISTS is_admin boolean NOT NULL DEFAULT false;
+
+-- Transportation toggle for girls games
+ALTER TABLE games ADD COLUMN IF NOT EXISTS requires_transport boolean NOT NULL DEFAULT false;
+
+-- Soft-delete support for games
+ALTER TABLE games ADD COLUMN IF NOT EXISTS archived boolean NOT NULL DEFAULT false;
 
 -- 6. Add sms_log types for new features
 -- (existing check constraint needs to be replaced)

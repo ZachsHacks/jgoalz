@@ -224,7 +224,7 @@ function PlayerForm({
               id="age"
               name="age"
               type="number"
-              min={1}
+              min={segment === "teens" ? 14 : 1}
               max={segment === "girls" ? 13 : 17}
               defaultValue={defaultValues?.age ?? ""}
             />

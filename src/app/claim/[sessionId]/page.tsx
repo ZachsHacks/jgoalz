@@ -135,6 +135,28 @@ export default function ClaimPage({
       return;
     }
 
+    // Check credits
+    const { data: credits } = await supabase
+      .from("player_credits")
+      .select("credits_purchased, credits_used")
+      .eq("player_id", player.id)
+      .eq("game_id", game.id)
+      .limit(1);
+
+    const creditRow = credits?.[0];
+    const hasCredits = creditRow && creditRow.credits_purchased > creditRow.credits_used;
+
+    if (!hasCredits) {
+      setState({ status: "error", message: "You need credits to join this game. Contact the organizer to purchase credits." });
+      return;
+    }
+
+    // Check policy
+    if (!player.policy_accepted_at) {
+      setState({ status: "error", message: "You need to sign the cancellation policy in your profile first." });
+      return;
+    }
+
     // Insert session_player
     const { error: spErr } = await supabase.from("session_players").insert({
       session_id: session.id,

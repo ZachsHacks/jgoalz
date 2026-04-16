@@ -26,35 +26,7 @@ export async function POST() {
       if (daysUntil < 0) daysUntil += 7;
       if (daysUntil === 0) daysUntil = 0; // today counts
 
-      const sessionDate = new Date(today);
-      sessionDate.setDate(today.getDate() + daysUntil);
-      const dateStr = sessionDate.toISOString().split("T")[0];
-
-      // Check if session already exists
-      const { data: existing } = await supabase
-        .from("sessions")
-        .select("id")
-        .eq("game_id", game.id)
-        .eq("date", dateStr)
-        .limit(1);
-
-      if (existing && existing.length > 0) continue;
-
-      // Create the session
-      const { data: newSession, error: sessionErr } = await supabase
-        .from("sessions")
-        .insert({
-          game_id: game.id,
-          date: dateStr,
-          status: "upcoming",
-          spots_remaining: game.capacity,
-        })
-        .select()
-        .single();
-
-      if (sessionErr || !newSession) continue;
-
-      // Get all active game_players
+      // Get all active game_players once per game (outside week loop)
       const { data: gamePlayers } = await supabase
         .from("game_players")
         .select("*")
@@ -62,71 +34,102 @@ export async function POST() {
         .eq("status", "active");
 
       const activePlayers = (gamePlayers ?? []) as GamePlayer[];
-      let playersAdded = 0;
-      const month = `${sessionDate.getFullYear()}-${String(sessionDate.getMonth() + 1).padStart(2, "0")}`;
 
-      for (const gp of activePlayers) {
-        const cancelToken = randomUUID();
+      for (let weekOffset = 0; weekOffset < 4; weekOffset++) {
+        const sessionDate = new Date(today);
+        sessionDate.setDate(today.getDate() + daysUntil + weekOffset * 7);
+        const dateStr = sessionDate.toISOString().split("T")[0];
 
-        // Create session_player
-        const { error: spErr } = await supabase.from("session_players").insert({
-          session_id: newSession.id,
-          player_id: gp.player_id,
-          source: "permanent",
-          status: "confirmed",
-          needs_transport: false,
-          cancel_token: cancelToken,
-        });
-
-        if (spErr) continue;
-        playersAdded++;
-
-        // Deduct 1 credit if available
-        const { data: creditRows } = await supabase
-          .from("player_credits")
-          .select("*")
-          .eq("player_id", gp.player_id)
+        // Check if session already exists
+        const { data: existing } = await supabase
+          .from("sessions")
+          .select("id")
           .eq("game_id", game.id)
+          .eq("date", dateStr)
           .limit(1);
 
-        let paidByCredit = false;
-        if (creditRows && creditRows.length > 0) {
-          const credit = creditRows[0];
-          if (credit.credits_used < credit.credits_purchased) {
-            await supabase
-              .from("player_credits")
-              .update({ credits_used: credit.credits_used + 1 })
-              .eq("id", credit.id);
-            paidByCredit = true;
+        if (existing && existing.length > 0) continue;
+
+        // Create the session
+        const { data: newSession, error: sessionErr } = await supabase
+          .from("sessions")
+          .insert({
+            game_id: game.id,
+            date: dateStr,
+            status: "upcoming",
+            spots_remaining: game.capacity,
+          })
+          .select()
+          .single();
+
+        if (sessionErr || !newSession) continue;
+
+        let playersAdded = 0;
+        const month = `${sessionDate.getFullYear()}-${String(sessionDate.getMonth() + 1).padStart(2, "0")}`;
+
+        for (const gp of activePlayers) {
+          const cancelToken = randomUUID();
+
+          // Create session_player
+          const { error: spErr } = await supabase.from("session_players").insert({
+            session_id: newSession.id,
+            player_id: gp.player_id,
+            source: "permanent",
+            status: "confirmed",
+            needs_transport: false,
+            cancel_token: cancelToken,
+          });
+
+          if (spErr) continue;
+          playersAdded++;
+
+          // Deduct 1 credit if available
+          const { data: creditRows } = await supabase
+            .from("player_credits")
+            .select("*")
+            .eq("player_id", gp.player_id)
+            .eq("game_id", game.id)
+            .limit(1);
+
+          let paidByCredit = false;
+          if (creditRows && creditRows.length > 0) {
+            const credit = creditRows[0];
+            if (credit.credits_used < credit.credits_purchased) {
+              await supabase
+                .from("player_credits")
+                .update({ credits_used: credit.credits_used + 1 })
+                .eq("id", credit.id);
+              paidByCredit = true;
+            }
           }
+
+          // Create payment record
+          const amount = game.price_per_player;
+          await supabase.from("payments").insert({
+            session_id: newSession.id,
+            player_id: gp.player_id,
+            amount,
+            status: paidByCredit ? "paid" : "pending",
+            paid_at: paidByCredit ? new Date().toISOString() : null,
+            month,
+            notes: paidByCredit ? "Auto-paid from prepaid credits" : null,
+          });
         }
 
-        // Create payment record
-        const amount = game.price_per_player;
-        await supabase.from("payments").insert({
+        // Update spots_remaining
+        const spotsRemaining = game.capacity - playersAdded;
+        await supabase
+          .from("sessions")
+          .update({ spots_remaining: spotsRemaining })
+          .eq("id", newSession.id);
+
+        created.push({
           session_id: newSession.id,
-          player_id: gp.player_id,
-          amount,
-          status: paidByCredit ? "paid" : "pending",
-          paid_at: paidByCredit ? new Date().toISOString() : null,
-          month,
-          notes: paidByCredit ? "Auto-paid from prepaid credits" : null,
+          game_name: game.name,
+          date: dateStr,
+          players_added: playersAdded,
         });
       }
-
-      // Update spots_remaining
-      const spotsRemaining = game.capacity - playersAdded;
-      await supabase
-        .from("sessions")
-        .update({ spots_remaining: spotsRemaining })
-        .eq("id", newSession.id);
-
-      created.push({
-        session_id: newSession.id,
-        game_name: game.name,
-        date: dateStr,
-        players_added: playersAdded,
-      });
     }
 
     return NextResponse.json({ success: true, sessions: created });

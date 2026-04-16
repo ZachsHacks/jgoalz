@@ -33,7 +33,9 @@ import {
   DollarSign,
   Power,
   PowerOff,
+  Trash2,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Game, Segment, Sport } from "@/types/database";
 import {
   DAY_NAMES,
@@ -52,11 +54,14 @@ export default function GamesPage() {
   const [filterSport, setFilterSport] = useState<string>("all");
   const [formSegment, setFormSegment] = useState<string>("women");
   const [editFormSegment, setEditFormSegment] = useState<string>("women");
+  const [formRequiresTransport, setFormRequiresTransport] = useState(false);
+  const [editFormRequiresTransport, setEditFormRequiresTransport] = useState(false);
 
   async function loadGames() {
     const { data } = await supabase
       .from("games")
       .select("*, game_players(id)")
+      .eq("archived", false)
       .order("day_of_week", { ascending: true });
 
     const mapped = (data ?? []).map((g) => ({
@@ -87,11 +92,13 @@ export default function GamesPage() {
       location: form.get("location") as string,
       capacity: Number(form.get("capacity")) || 12,
       price_per_player: Number(form.get("price_per_player")) || 0,
-      transport_fee: segment === "girls" ? (Number(form.get("transport_fee")) || null) : null,
+      transport_fee: segment === "girls" && formRequiresTransport ? (Number(form.get("transport_fee")) || null) : null,
+      requires_transport: segment === "girls" ? formRequiresTransport : false,
       active: true,
     });
     setShowCreate(false);
     setFormSegment("women");
+    setFormRequiresTransport(false);
     loadGames();
   }
 
@@ -111,16 +118,39 @@ export default function GamesPage() {
         location: form.get("location") as string,
         capacity: Number(form.get("capacity")) || 12,
         price_per_player: Number(form.get("price_per_player")) || 0,
-        transport_fee: segment === "girls" ? (Number(form.get("transport_fee")) || null) : null,
+        transport_fee: segment === "girls" && editFormRequiresTransport ? (Number(form.get("transport_fee")) || null) : null,
+        requires_transport: segment === "girls" ? editFormRequiresTransport : false,
       })
       .eq("id", editingGame.id);
     setEditingGame(null);
     setEditFormSegment("women");
+    setEditFormRequiresTransport(false);
     loadGames();
   }
 
   async function toggleActive(id: string, currentActive: boolean) {
     await supabase.from("games").update({ active: !currentActive }).eq("id", id);
+    loadGames();
+  }
+
+  async function handleDelete(game: Game) {
+    const [sessionsRes, rosterRes] = await Promise.all([
+      supabase.from("sessions").select("id", { count: "exact", head: true }).eq("game_id", game.id),
+      supabase.from("game_players").select("id", { count: "exact", head: true }).eq("game_id", game.id),
+    ]);
+    const hasSessions = (sessionsRes.count ?? 0) > 0;
+    const hasRoster = (rosterRes.count ?? 0) > 0;
+
+    if (!hasSessions && !hasRoster) {
+      if (!confirm(`Permanently delete "${game.name}"? This cannot be undone.`)) return;
+      await supabase.from("games").delete().eq("id", game.id);
+    } else {
+      const detail = [hasSessions ? "session history" : "", hasRoster ? "players on its roster" : ""]
+        .filter(Boolean)
+        .join(" and ");
+      if (!confirm(`"${game.name}" has ${detail}. It will be hidden from the Games page but preserved for historical records. Continue?`)) return;
+      await supabase.from("games").update({ archived: true }).eq("id", game.id);
+    }
     loadGames();
   }
 
@@ -136,12 +166,16 @@ export default function GamesPage() {
     submitLabel,
     currentSegment,
     onSegmentChange,
+    requiresTransport,
+    onRequiresTransportChange,
   }: {
     onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
     defaults?: Game;
     submitLabel: string;
     currentSegment: string;
     onSegmentChange: (val: string) => void;
+    requiresTransport: boolean;
+    onRequiresTransportChange: (val: boolean) => void;
   }) {
     return (
       <form onSubmit={onSubmit} className="space-y-4">
@@ -180,8 +214,8 @@ export default function GamesPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="women">Women (18+)</SelectItem>
-                <SelectItem value="teens">Teen Girls (13-17)</SelectItem>
-                <SelectItem value="girls">Girls (Under 12)</SelectItem>
+                <SelectItem value="teens">Teen Girls (Ages 14-17)</SelectItem>
+                <SelectItem value="girls">Girls (Ages 13 and under)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -251,18 +285,32 @@ export default function GamesPage() {
           </div>
         </div>
         {currentSegment === "girls" && (
-          <div>
-            <Label htmlFor="transport_fee">Transport Fee ($, optional)</Label>
-            <Input
-              id="transport_fee"
-              name="transport_fee"
-              type="number"
-              min={0}
-              step="0.01"
-              defaultValue={defaults?.transport_fee ?? ""}
-              placeholder="0.00"
-            />
-          </div>
+          <>
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="requires_transport"
+                checked={requiresTransport}
+                onCheckedChange={(checked) => onRequiresTransportChange(!!checked)}
+              />
+              <Label htmlFor="requires_transport" className="cursor-pointer">
+                This game involves transportation
+              </Label>
+            </div>
+            {requiresTransport && (
+              <div>
+                <Label htmlFor="transport_fee">Transport Fee ($, optional)</Label>
+                <Input
+                  id="transport_fee"
+                  name="transport_fee"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  defaultValue={defaults?.transport_fee ?? ""}
+                  placeholder="0.00"
+                />
+              </div>
+            )}
+          </>
         )}
         <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
           {submitLabel}
@@ -284,7 +332,10 @@ export default function GamesPage() {
           open={showCreate}
           onOpenChange={(open) => {
             setShowCreate(open);
-            if (!open) setFormSegment("women");
+            if (!open) {
+              setFormSegment("women");
+              setFormRequiresTransport(false);
+            }
           }}
         >
           <DialogTrigger className={cn(buttonVariants({ variant: "default", size: "default" }), "bg-purple-600 hover:bg-purple-700")}>
@@ -300,6 +351,8 @@ export default function GamesPage() {
               submitLabel="Create"
               currentSegment={formSegment}
               onSegmentChange={setFormSegment}
+              requiresTransport={formRequiresTransport}
+              onRequiresTransportChange={setFormRequiresTransport}
             />
           </DialogContent>
         </Dialog>
@@ -315,8 +368,8 @@ export default function GamesPage() {
             <SelectContent>
               <SelectItem value="all">All Segments</SelectItem>
               <SelectItem value="women">Women (18+)</SelectItem>
-              <SelectItem value="teens">Teen Girls (13-17)</SelectItem>
-              <SelectItem value="girls">Girls (Under 12)</SelectItem>
+              <SelectItem value="teens">Teen Girls (Ages 14-17)</SelectItem>
+              <SelectItem value="girls">Girls (Ages 13 and under)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -342,6 +395,7 @@ export default function GamesPage() {
           if (!open) {
             setEditingGame(null);
             setEditFormSegment("women");
+            setEditFormRequiresTransport(false);
           }
         }}
       >
@@ -356,6 +410,8 @@ export default function GamesPage() {
               submitLabel="Save Changes"
               currentSegment={editFormSegment}
               onSegmentChange={setEditFormSegment}
+              requiresTransport={editFormRequiresTransport}
+              onRequiresTransportChange={setEditFormRequiresTransport}
             />
           )}
         </DialogContent>
@@ -445,6 +501,7 @@ export default function GamesPage() {
                         onClick={() => {
                           setEditingGame(game);
                           setEditFormSegment(game.segment);
+                          setEditFormRequiresTransport(game.requires_transport ?? false);
                         }}
                       >
                         <Pencil className="w-3.5 h-3.5 mr-1.5" />
@@ -466,6 +523,15 @@ export default function GamesPage() {
                             Activate
                           </>
                         )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDelete(game)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                        Delete
                       </Button>
                       <Link href={`/admin/games/${game.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
                           View Roster

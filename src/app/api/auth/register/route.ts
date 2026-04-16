@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
       active: true,
       password_hash,
       waiver_accepted_at: new Date().toISOString(),
+      policy_accepted_at: new Date().toISOString(),
     };
 
     if (segment === "girls" || segment === "teens") {
